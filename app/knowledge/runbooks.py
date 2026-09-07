@@ -36,6 +36,7 @@ RUNBOOKS = [
             "increase_connection_pool",
         ],
     },
+
     {
         "id": "RB-002",
         "title": "Redis Service Failure",
@@ -73,8 +74,49 @@ RUNBOOKS = [
             "restart_service",
         ],
     },
+
+    {
+        "id": "RB-003",
+        "title": "Deployment Regression",
+        "service": "payment-api",
+        "description": (
+            "Operational procedure for investigating and responding "
+            "to application regressions caused by a recent deployment."
+        ),
+        "symptoms": [
+            "Elevated error rate after a recent deployment",
+            "Increased request latency after a recent deployment",
+            "Deployment health check failure",
+            "Application errors associated with the latest deployment",
+            "Database health remains normal",
+            "Redis health remains normal",
+        ],
+        "diagnostic_steps": [
+            "Check whether the incident started after a recent deployment.",
+            "Review application logs for errors following the deployment.",
+            "Compare current error rate and latency with normal levels.",
+            "Confirm whether database health is normal.",
+            "Confirm whether Redis health is normal.",
+            "Determine whether the issue is isolated to the deployed application version.",
+        ],
+        "remediation_steps": [
+            "Rollback the recent deployment within approved limits.",
+            "Monitor error rate and latency after the rollback.",
+            "Verify application health and supporting services.",
+        ],
+        "verification_checks": [
+            "Error rate is at or below 10%.",
+            "Latency is at or below 500 ms.",
+            "Database health check passes.",
+            "Redis health check passes.",
+            "Application deployment health check passes.",
+        ],
+        "allowed_actions": [
+            "rollback_deployment",
+        ],
+    },
 ]
 
 
 def get_runbooks() -> list[dict]:
-    return RUNBOOKS
+    return RUNBOOKS

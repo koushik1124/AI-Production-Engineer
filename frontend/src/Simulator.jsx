@@ -5,6 +5,7 @@ import {
     getSimulatorLogs,
     triggerDatabaseFailure,
     triggerRedisFailure,
+    triggerDeploymentFailure,
     triggerVerificationFailure,
     resetSimulator,
 } from "./services/api";
@@ -29,6 +30,7 @@ function Simulator({
     /*
      * Load simulator data
      */
+
     async function loadSimulatorData() {
         try {
             setError(null);
@@ -54,6 +56,7 @@ function Simulator({
     /*
      * Initial load
      */
+
     useEffect(() => {
         async function initialize() {
             setLoading(true);
@@ -70,6 +73,7 @@ function Simulator({
     /*
      * Database failure
      */
+
     async function handleDatabaseFailure() {
         try {
             setTriggering(true);
@@ -109,6 +113,7 @@ function Simulator({
     /*
      * Redis failure
      */
+
     async function handleRedisFailure() {
         try {
             setTriggering(true);
@@ -146,8 +151,49 @@ function Simulator({
 
 
     /*
+     * Deployment regression
+     */
+
+    async function handleDeploymentFailure() {
+        try {
+            setTriggering(true);
+            setError(null);
+            setSuccessMessage(null);
+
+            const result =
+                await triggerDeploymentFailure();
+
+            console.log(
+                "Deployment failure triggered:",
+                result
+            );
+
+            setCreatedIncident(
+                result.incident
+            );
+
+            setSuccessMessage(
+                "Deployment regression triggered successfully."
+            );
+
+            await loadSimulatorData();
+
+        } catch (err) {
+            console.error(err);
+
+            setError(
+                "Unable to trigger deployment regression."
+            );
+        } finally {
+            setTriggering(false);
+        }
+    }
+
+
+    /*
      * Verification failure
      */
+
     async function handleVerificationFailure() {
         try {
             setTriggering(true);
@@ -177,6 +223,7 @@ function Simulator({
     /*
      * Reset simulator
      */
+
     async function handleReset() {
         try {
             setTriggering(true);
@@ -207,6 +254,7 @@ function Simulator({
     /*
      * Investigate created incident
      */
+
     function handleInvestigate() {
         if (!createdIncident) {
             return;
@@ -221,6 +269,7 @@ function Simulator({
     /*
      * Loading state
      */
+
     if (loading) {
         return (
             <main className="main-content">
@@ -265,6 +314,7 @@ function Simulator({
     /*
      * Fatal loading error
      */
+
     if (error && !metrics) {
         return (
             <main className="main-content">
@@ -328,6 +378,12 @@ function Simulator({
 
     const paymentGatewayStatus =
         metrics.payment_gateway_healthy
+            ? "Healthy"
+            : "Unhealthy";
+
+
+    const deploymentStatus =
+        metrics.deployment_healthy
             ? "Healthy"
             : "Unhealthy";
 
@@ -478,6 +534,29 @@ function Simulator({
 
                             </div>
 
+
+                            <div className="simulator-status-row">
+
+                                <span>
+                                    Deployment
+                                </span>
+
+                                <span className="health-status">
+
+                                    <span
+                                        className={
+                                            metrics.deployment_healthy
+                                                ? "status-dot"
+                                                : "status-dot status-dot-error"
+                                        }
+                                    />
+
+                                    {deploymentStatus}
+
+                                </span>
+
+                            </div>
+
                         </div>
 
                     </div>
@@ -537,6 +616,31 @@ function Simulator({
                                 {triggering
                                     ? "Triggering..."
                                     : "Trigger Redis Failure"}
+                            </button>
+
+                        </div>
+
+
+                        <div className="failure-scenario">
+
+                            <h4>
+                                Deployment Regression
+                            </h4>
+
+                            <p>
+                                Simulates a recent deployment introducing
+                                increased errors, latency, and a failed
+                                deployment health check.
+                            </p>
+
+                            <button
+                                className="primary-button"
+                                onClick={handleDeploymentFailure}
+                                disabled={triggering}
+                            >
+                                {triggering
+                                    ? "Triggering..."
+                                    : "Trigger Deployment Regression"}
                             </button>
 
                         </div>

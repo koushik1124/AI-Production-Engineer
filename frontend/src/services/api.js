@@ -151,6 +151,36 @@ export async function triggerDatabaseFailure() {
 }
 
 
+export async function triggerRedisFailure() {
+    return apiRequest(
+        "/simulator/failures/redis",
+        {
+            method: "POST",
+        }
+    );
+}
+
+
+export async function triggerDeploymentFailure() {
+    return apiRequest(
+        "/simulator/failures/deployment",
+        {
+            method: "POST",
+        }
+    );
+}
+
+
+export async function triggerVerificationFailure() {
+    return apiRequest(
+        "/simulator/failures/verification",
+        {
+            method: "POST",
+        }
+    );
+}
+
+
 export async function resetSimulator() {
     return apiRequest(
         "/simulator/reset",
@@ -158,16 +188,4 @@ export async function resetSimulator() {
             method: "POST",
         }
     );
-}
-
-export async function triggerRedisFailure() {
-    return apiRequest("/simulator/failures/redis", {
-        method: "POST",
-    });
-}
-
-export async function triggerVerificationFailure() {
-    return apiRequest("/simulator/failures/verification", {
-        method: "POST",
-    });
 }

@@ -9,6 +9,7 @@ class ProductionState:
     database_healthy: bool = True
     redis_healthy: bool = True
     payment_gateway_healthy: bool = True
+    deployment_healthy: bool = True
 
     requests_per_minute: int = 100
     error_rate: float = 0.01
@@ -24,6 +25,7 @@ class ProductionState:
         self.database_healthy = True
         self.redis_healthy = True
         self.payment_gateway_healthy = True
+        self.deployment_healthy = True
 
         self.requests_per_minute = 100
         self.error_rate = 0.01
@@ -114,6 +116,45 @@ class ProductionState:
             f"{timestamp} Redis became unhealthy"
         )
 
+    def simulate_deployment_failure(self):
+        """
+        Start a fresh deployment regression scenario.
+
+        The latest deployment introduces application
+        errors and increased latency while supporting
+        services remain healthy.
+        """
+
+        # Always start from a clean production state.
+        self.reset()
+
+        # Inject the deployment regression.
+        self.deployment_healthy = False
+        self.error_rate = 0.28
+        self.latency_ms = 1800
+
+        timestamp = datetime.now().isoformat(
+            timespec="seconds"
+        )
+
+        # Generate deployment-specific evidence.
+        self.logs.extend(
+            [
+                f"{timestamp} ERROR {self.service} "
+                "Deployment health check failed",
+
+                f"{timestamp} ERROR {self.service} "
+                "Elevated error rate after recent deployment",
+
+                f"{timestamp} ERROR {self.service} "
+                "Request latency increased after deployment",
+            ]
+        )
+
+        self.events.append(
+            f"{timestamp} Recent deployment caused application regression"
+        )
+
     def simulate_recovery_failure(self):
         """
         Deliberately keep the production environment unhealthy.
@@ -141,6 +182,7 @@ class ProductionState:
             "database_healthy": self.database_healthy,
             "redis_healthy": self.redis_healthy,
             "payment_gateway_healthy": self.payment_gateway_healthy,
+            "deployment_healthy": self.deployment_healthy,
         }
 
     def get_logs(self) -> list[str]:

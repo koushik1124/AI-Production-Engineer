@@ -153,6 +153,7 @@ def simulate_database_failure(
         "evidence": evidence,
     }
 
+
 @router.post("/failures/redis")
 def simulate_redis_failure(
     db: Session = Depends(get_db),
@@ -237,6 +238,90 @@ def simulate_redis_failure(
     }
 
 
+@router.post("/failures/deployment")
+def simulate_deployment_failure(
+    db: Session = Depends(get_db),
+):
+    # Start a completely fresh deployment regression scenario.
+    production_state.simulate_deployment_failure()
+
+    # Capture evidence immediately after
+    # the failure is injected.
+    collector = EvidenceCollector()
+    evidence = collector.collect()
+
+    metrics = evidence["metrics"]
+    logs = evidence["logs"]
+    events = evidence["events"]
+    captured_at = evidence["captured_at"]
+
+    # Generate a NEW incident ID.
+    incident_id = get_next_simulator_incident_id(
+        db
+    )
+
+    incident = Incident(
+        id=incident_id,
+        service=production_state.service,
+        severity=IncidentSeverity.HIGH,
+        title="Deployment regression detected",
+        description=(
+            "A recent application deployment introduced "
+            "elevated errors and latency in the production "
+            "simulator."
+        ),
+    )
+
+    db_incident = IncidentDB(
+        id=incident.id,
+        service=incident.service,
+        severity=incident.severity.value,
+        status=incident.status.value,
+        title=incident.title,
+        description=incident.description,
+        created_at=incident.created_at,
+        metrics_snapshot=json.dumps(
+            {
+                "captured_at": captured_at,
+                "data": metrics,
+            }
+        ),
+        logs_snapshot=json.dumps(
+            {
+                "captured_at": captured_at,
+                "data": logs,
+            }
+        ),
+        events_snapshot=json.dumps(
+            {
+                "captured_at": captured_at,
+                "data": events,
+            }
+        ),
+    )
+
+    db.add(db_incident)
+    db.commit()
+    db.refresh(db_incident)
+
+    # Record the creation in the persistent timeline.
+    timeline.record(
+        db,
+        incident.id,
+        "INCIDENT_CREATED",
+        f"Incident created: {incident.title}",
+    )
+
+    return {
+        "message": (
+            "Deployment failure simulated and "
+            "new incident created"
+        ),
+        "incident": incident,
+        "evidence": evidence,
+    }
+
+
 @router.post("/reset")
 async def reset_simulator():
     production_state.reset()
@@ -245,6 +330,7 @@ async def reset_simulator():
         "message": "Production simulator reset",
         "metrics": production_state.get_metrics(),
     }
+
 
 @router.post("/tests/block-dangerous-action/{incident_id}")
 def inject_dangerous_action(
